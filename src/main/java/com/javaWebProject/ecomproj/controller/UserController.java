@@ -4,6 +4,9 @@ import com.javaWebProject.ecomproj.model.User;
 import com.javaWebProject.ecomproj.service.UserService;
 import com.javaWebProject.ecomproj.utils.JwtUtil;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,7 +38,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
+    public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletResponse response) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
         );
@@ -47,7 +50,17 @@ public class UserController {
         }
 
         String jwtToken = jwtUtil.generateToken(existingUser.get());
-        return ResponseEntity.ok(jwtToken);
+
+    // Set the token in the response cookie
+        Cookie cookie = new Cookie("token", jwtToken);
+        cookie.setHttpOnly(true); // Prevent access via JavaScript
+        cookie.setSecure(true);   // Use HTTPS in production
+        cookie.setPath("/");
+        cookie.setMaxAge(86400);  // 1 day
+
+        response.addCookie(cookie);
+
+        return ResponseEntity.ok("Login successful");
     }
     
 }
